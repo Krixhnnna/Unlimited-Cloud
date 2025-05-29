@@ -1,4 +1,4 @@
-// app.js - Complete implementation without blue drag effects
+// app.js - Complete implementation with theme support
 class TGDriveApp {
     constructor() {
         this.apiBase = 'http://127.0.0.1:8000/api';
@@ -17,6 +17,7 @@ class TGDriveApp {
         this.backgroundUploads = false;
         this.draggedFile = null;
         this.mediaCache = new Map();
+        this.currentTheme = 'light';
         
         this.init();
     }
@@ -33,6 +34,9 @@ class TGDriveApp {
     
     async setupApp() {
         console.log('Setting up app...');
+        
+        // Initialize theme FIRST
+        this.initTheme();
         
         if (window.pendingLogin) {
             console.log('Found pending login, processing...');
@@ -66,6 +70,43 @@ class TGDriveApp {
             console.log('No token found, showing login screen');
             this.showLoginScreen();
         }
+    }
+    
+    // Theme Methods
+    initTheme() {
+        const savedTheme = localStorage.getItem('tgdrive-theme') || 'light';
+        console.log('Initializing theme:', savedTheme);
+        this.setTheme(savedTheme);
+    }
+
+    setTheme(theme) {
+        console.log('Setting theme to:', theme);
+        this.currentTheme = theme;
+        
+        // Set the data-theme attribute on the document
+        document.documentElement.setAttribute('data-theme', theme);
+        
+        // Save to localStorage
+        localStorage.setItem('tgdrive-theme', theme);
+        
+        // Update the icon
+        const themeIcon = document.getElementById('themeIcon');
+        if (themeIcon) {
+            if (theme === 'dark') {
+                themeIcon.className = 'fas fa-moon';
+            } else {
+                themeIcon.className = 'fas fa-sun';
+            }
+            console.log('Theme icon updated to:', themeIcon.className);
+        } else {
+            console.error('Theme icon element not found');
+        }
+    }
+
+    toggleTheme() {
+        const newTheme = this.currentTheme === 'dark' ? 'light' : 'dark';
+        console.log('Toggling theme from', this.currentTheme, 'to', newTheme);
+        this.setTheme(newTheme);
     }
     
     async makeAuthenticatedRequest(url, options = {}) {
@@ -142,6 +183,16 @@ class TGDriveApp {
         if (listViewBtn) {
             listViewBtn.addEventListener('click', () => {
                 this.setViewMode('list');
+            });
+        }
+
+        // Theme toggle - IMPORTANT: This is the fix
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        if (themeToggleBtn) {
+            themeToggleBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('Theme button clicked');
+                this.toggleTheme();
             });
         }
         
@@ -413,7 +464,7 @@ class TGDriveApp {
         
         if (typeof logout === 'function') {
             logout();
-        } else {
+                } else {
             document.cookie.split(";").forEach(function(c) { 
                 document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
             });
@@ -949,7 +1000,7 @@ class TGDriveApp {
         // Update active uploads in dropdown
         if (activeUploadsContainer) {
             if (this.activeUploads.size === 0 && this.uploadQueue.length === 0) {
-                activeUploadsContainer.innerHTML = '<p class="text-sm text-gray-500">No active uploads</p>';
+                activeUploadsContainer.innerHTML = '<p class="text-sm theme-text-secondary">No active uploads</p>';
             } else {
                 let html = '';
                 this.activeUploads.forEach((upload, id) => {
@@ -994,7 +1045,7 @@ class TGDriveApp {
                 const recentFiles = await response.json();
                 
                 if (recentFiles.length === 0) {
-                    recentFilesContainer.innerHTML = '<p class="text-sm text-gray-500">No recent files</p>';
+                    recentFilesContainer.innerHTML = '<p class="text-sm theme-text-secondary">No recent files</p>';
                 } else {
                     let html = '';
                     recentFiles.forEach(file => {
@@ -1728,4 +1779,3 @@ class TGDriveApp {
 
 // Initialize the app
 const app = new TGDriveApp();
-

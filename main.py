@@ -295,24 +295,10 @@ async def upload_file(
             del active_uploads[upload_id]
             raise HTTPException(status_code=499, detail="Upload cancelled")
         
-        # Determine target group based on folder_id
-        if folder_id == 0:
-            target_group_id = groups_data["default_group_id"]
-            if not target_group_id:
-                target_group_id = await ensure_default_group()
-        else:
-            folder = None
-            for f in db["folders"]:
-                if f["id"] == folder_id and not f.get("is_deleted", False):
-                    folder = f
-                    break
-            
-            if not folder:
-                raise HTTPException(status_code=404, detail="Folder not found")
-            
-            target_group_id = groups_data["folder_groups"].get(str(folder_id))
-            if not target_group_id:
-                raise HTTPException(status_code=500, detail="Folder group not found")
+        # ALWAYS use default group for all files (regardless of folder)
+        target_group_id = groups_data["default_group_id"]
+        if not target_group_id:
+            target_group_id = await ensure_default_group()
         
         print(f"Target group ID: {target_group_id}")
         
@@ -324,7 +310,7 @@ async def upload_file(
             await client.get_dialogs()
             target_entity = await client.get_entity(int(target_group_id))
         
-        # Upload to specific Telegram group
+        # Upload to default Telegram group
         message = await client.send_file(
             target_entity,
             io.BytesIO(content),
@@ -334,15 +320,15 @@ async def upload_file(
         
         print(f"File uploaded to Telegram, message ID: {message.id}")
         
-        # Save to database with correct folder_id
+        # Save to database with correct folder_id (for organization in app only)
         file_record = {
             "id": db["next_id"],
             "name": file.filename,
             "telegram_file_id": str(message.id),
-            "telegram_group_id": target_group_id,
+            "telegram_group_id": target_group_id,  # Always default group
             "size": len(content),
             "mime_type": file.content_type or "application/octet-stream",
-            "folder_id": folder_id,  # This ensures file is saved to correct folder
+            "folder_id": folder_id,  # This is just for app organization
             "uploaded_by": current_user['user_id'],
             "created_at": datetime.now().isoformat(),
             "is_deleted": False
@@ -365,6 +351,63 @@ async def upload_file(
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/files/{file_id}/move")
+async def move_file(
+    file_id: int, 
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
+    """Move a file to a different folder"""
+    try:
+        data = await request.json()
+        target_folder_id = data.get('folder_id', 0)
+        
+        db = load_db()
+        
+        # Find the file
+        file_record = None
+        for f in db["files"]:
+            if f["id"] == file_id and not f.get("is_deleted", False):
+                file_record = f
+                break
+        
+        if not file_record:
+            raise HTTPException(status_code=404, detail="File not found")
+        
+        # Verify target folder exists (if not root)
+        if target_folder_id != 0:
+            folder_exists = False
+            for folder in db["folders"]:
+                if folder["id"] == target_folder_id and not folder.get("is_deleted", False):
+                    folder_exists = True
+                    break
+            
+            if not folder_exists:
+                raise HTTPException(status_code=404, detail="Target folder not found")
+        
+        # Update file's folder_id
+        old_folder_id = file_record["folder_id"]
+        file_record["folder_id"] = target_folder_id
+        file_record["moved_at"] = datetime.now().isoformat()
+        
+        # Save database
+        save_db(db)
+        
+        print(f"Moved file {file_id} from folder {old_folder_id} to folder {target_folder_id}")
+        
+        return {
+            "message": "File moved successfully",
+            "file_id": file_id,
+            "old_folder_id": old_folder_id,
+            "new_folder_id": target_folder_id
+        }
+        
+    except Exception as e:
+        print(f"Move file error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/api/upload/cancel/{upload_id}")
 async def cancel_upload(upload_id: str, current_user: dict = Depends(get_current_user)):
@@ -491,29 +534,18 @@ async def create_folder(
 ):
     try:
         db = load_db()
-        groups_data = load_groups()
         
         print(f"Creating folder: {name}")
         
-        # Create Telegram group for folder
-        group_id = await create_folder_group(name)
-        if not group_id:
-            raise HTTPException(status_code=500, detail="Failed to create Telegram group")
-        
-        # Create folder record
+        # Create folder record WITHOUT creating Telegram group
         folder_record = {
             "id": db["next_id"],
             "name": name,
             "parent_id": parent_id,
-            "telegram_group_id": group_id,
             "created_by": current_user['user_id'],
             "created_at": datetime.now().isoformat(),
             "is_deleted": False
         }
-        
-        # Save folder group mapping
-        groups_data["folder_groups"][str(db["next_id"])] = group_id
-        save_groups(groups_data)
         
         db["folders"].append(folder_record)
         db["next_id"] += 1
@@ -528,6 +560,7 @@ async def create_folder(
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/api/folders")
 async def get_folders(parent_id: int = 0, current_user: dict = Depends(get_current_user)):
@@ -575,7 +608,6 @@ async def delete_file(file_id: int, current_user: dict = Depends(get_current_use
 async def delete_folder(folder_id: int, current_user: dict = Depends(get_current_user)):
     try:
         db = load_db()
-        groups_data = load_groups()
         
         folder_record = None
         for f in db["folders"]:
@@ -586,27 +618,18 @@ async def delete_folder(folder_id: int, current_user: dict = Depends(get_current
         if not folder_record:
             raise HTTPException(status_code=404, detail="Folder not found")
         
-        # Delete all files in the folder first
+        # Delete all files in the folder (from Telegram and database)
         for file_record in db["files"]:
             if file_record["folder_id"] == folder_id and not file_record.get("is_deleted", False):
+                # Delete from Telegram
                 await delete_telegram_file(
                     file_record["telegram_group_id"], 
                     file_record["telegram_file_id"]
                 )
+                # Mark as deleted in database
                 file_record["is_deleted"] = True
         
-        # Delete the Telegram channel
-        channel_id = groups_data["folder_groups"].get(str(folder_id))
-        if channel_id:
-            success = await delete_telegram_channel(channel_id)
-            if success:
-                print(f"Successfully deleted Telegram channel for folder")
-                del groups_data["folder_groups"][str(folder_id)]
-                save_groups(groups_data)
-            else:
-                print(f"Failed to delete Telegram channel, but marking folder as deleted")
-        
-        # Mark folder as deleted
+        # Mark folder as deleted (no Telegram channel to delete)
         folder_record["is_deleted"] = True
         folder_record["deleted_at"] = datetime.now().isoformat()
         save_db(db)

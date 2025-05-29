@@ -33,10 +33,11 @@
       "telegram_group_id": 2551478312,
       "size": 1412655,
       "mime_type": "image/jpeg",
-      "folder_id": 0,
+      "folder_id": 2,
       "uploaded_by": 1647999141,
       "created_at": "2025-05-29T10:27:29.813152",
-      "is_deleted": false
+      "is_deleted": true,
+      "moved_at": "2025-05-29T14:10:03.342209"
     },
     {
       "id": 5,
@@ -45,10 +46,11 @@
       "telegram_group_id": 2551478312,
       "size": 52579166,
       "mime_type": "video/mp4",
-      "folder_id": 0,
+      "folder_id": 2,
       "uploaded_by": 1647999141,
       "created_at": "2025-05-29T10:30:35.560764",
-      "is_deleted": false
+      "is_deleted": true,
+      "moved_at": "2025-05-29T14:10:14.363733"
     },
     {
       "id": 6,
@@ -57,10 +59,11 @@
       "telegram_group_id": 2551478312,
       "size": 1515788,
       "mime_type": "image/jpeg",
-      "folder_id": 0,
+      "folder_id": 20,
       "uploaded_by": 1647999141,
       "created_at": "2025-05-29T10:44:11.815489",
-      "is_deleted": false
+      "is_deleted": false,
+      "moved_at": "2025-05-29T14:25:37.173861"
     },
     {
       "id": 7,
@@ -142,10 +145,11 @@
       "telegram_group_id": 2551478312,
       "size": 1497878,
       "mime_type": "image/jpeg",
-      "folder_id": 0,
+      "folder_id": 20,
       "uploaded_by": 1647999141,
       "created_at": "2025-05-29T11:55:28.795950",
-      "is_deleted": false
+      "is_deleted": false,
+      "moved_at": "2025-05-29T14:25:36.035242"
     },
     {
       "id": 14,
@@ -179,9 +183,34 @@
       "telegram_group_id": 2551478312,
       "size": 1515788,
       "mime_type": "image/jpeg",
-      "folder_id": 0,
+      "folder_id": 20,
       "uploaded_by": 1647999141,
       "created_at": "2025-05-29T13:36:08.839986",
+      "is_deleted": false,
+      "moved_at": "2025-05-29T14:25:40.077146"
+    },
+    {
+      "id": 17,
+      "name": "1.jpg",
+      "telegram_file_id": "22",
+      "telegram_group_id": 2551478312,
+      "size": 1384225,
+      "mime_type": "image/jpeg",
+      "folder_id": 0,
+      "uploaded_by": 1647999141,
+      "created_at": "2025-05-29T14:02:48.172096",
+      "is_deleted": false
+    },
+    {
+      "id": 18,
+      "name": "install.sh",
+      "telegram_file_id": "23",
+      "telegram_group_id": 2551478312,
+      "size": 7906,
+      "mime_type": "text/x-sh",
+      "folder_id": 0,
+      "uploaded_by": 1647999141,
+      "created_at": "2025-05-29T14:05:11.703646",
       "is_deleted": false
     }
   ],
@@ -193,6 +222,25 @@
       "telegram_group_id": 2453340104,
       "created_by": 1647999141,
       "created_at": "2025-05-29T10:26:52.135373",
+      "is_deleted": true,
+      "deleted_at": "2025-05-29T14:10:46.347666"
+    },
+    {
+      "id": 19,
+      "name": "New Folder",
+      "parent_id": 0,
+      "telegram_group_id": 2535896765,
+      "created_by": 1647999141,
+      "created_at": "2025-05-29T14:11:01.097884",
+      "is_deleted": true,
+      "deleted_at": "2025-05-29T14:25:10.457257"
+    },
+    {
+      "id": 20,
+      "name": "hello",
+      "parent_id": 0,
+      "created_by": 1647999141,
+      "created_at": "2025-05-29T14:25:17.824470",
       "is_deleted": false
     }
   ],
@@ -205,5 +253,5 @@
       "created_at": "2025-05-29T10:25:04.996442"
     }
   ],
-  "next_id": 17
+  "next_id": 21
 }
