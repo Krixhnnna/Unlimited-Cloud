@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TGDrive - Unlimited Cloud Storage</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #f9fafb;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f3f4f6;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --text-tertiary: #9ca3af;
+            --border-color: #e5e7eb;
+            --border-hover: #d1d5db;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --shadow-hover: rgba(0, 0, 0, 0.15);
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --text-tertiary: #94a3b8;
+            --border-color: #475569;
+            --border-hover: #64748b;
+            --shadow-color: rgba(0, 0, 0, 0.4);
+            --shadow-hover: rgba(0, 0, 0, 0.6);
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .theme-bg-primary { background-color: var(--bg-primary); }
+        .theme-bg-secondary { background-color: var(--bg-secondary); }
+        .theme-bg-tertiary { background-color: var(--bg-tertiary); }
+        .theme-text-primary { color: var(--text-primary); }
+        .theme-text-secondary { color: var(--text-secondary); }
+        .theme-text-tertiary { color: var(--text-tertiary); }
+        .theme-border { border-color: var(--border-color); }
+
+        .file-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .file-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .file-list-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+        }
+
+        .file-list-item:hover {
+            background: var(--bg-tertiary);
+            transform: translateX(4px);
+        }
+        
+        @media (max-width: 640px) {
+            .file-grid { grid-template-columns: 1fr; gap: 1rem; }
+            .sidebar { 
+                width: 100%; 
+                position: fixed; 
+                top: 0; 
+                left: -100%; 
+                height: 100vh; 
+                z-index: 50; 
+                transition: left 0.3s ease; 
+            }
+            .sidebar.open { left: 0; }
+            .main-content { width: 100%; }
+            .mobile-header { display: block; }
+            .desktop-sidebar { display: none; }
+        }
+        
+        @media (min-width: 641px) {
+            .sidebar { width: 300px; min-width: 300px; position: relative; }
+            .main-content { flex: 1; min-width: 0; }
+            .mobile-header { display: none; }
+            .desktop-sidebar { display: flex; }
+        }
+
+        .login-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 3rem;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 480px;
+            width: 100%;
+            text-align: center;
+        }
+
+        [data-theme="dark"] .login-card {
+            background: rgba(30, 41, 59, 0.95);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+        }
+
+        .custom-telegram-btn {
+            background: linear-gradient(135deg, #0088cc 0%, #005fa3 100%);
+            border: none;
+            border-radius: 16px;
+            padding: 16px 32px;
+            color: white;
+            font-weight: 600;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(0, 136, 204, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            max-width: 300px;
+            margin: 0 auto;
+        }
+
+        .custom-telegram-btn:hover {
+            background: linear-gradient(135deg, #005fa3 0%, #004080 100%);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(0, 136, 204, 0.4);
+        }
+
+        .storage-bar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 6px;
+            border-radius: 3px;
+            transition: all 0.3s ease;
+        }
+
+        .storage-bar-container {
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .upload-progress-item {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 15px var(--shadow-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: var(--bg-tertiary);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+            border-radius: 4px;
+            transition: width 0.1s ease-out;
+        }
+
+        .file-item, .folder-item {
+            transition: all 0.3s ease;
+            border-radius: 12px;
+            overflow: hidden;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            position: relative;
+        }
+
+        .file-item:hover, .folder-item:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 25px var(--shadow-hover);
+        }
+
+        .file-item.selected, .folder-item.selected {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+        }
+
+        .selection-tick {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #3b82f6;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            z-index: 10;
+        }
+
+        .file-menu {
+            position: absolute;
+            right: 0;
+            top: 100%;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px var(--shadow-color);
+            z-index: 100;
+            min-width: 160px;
+            display: none;
+        }
+
+        .file-menu.show {
+            display: block;
+        }
+
+        .file-menu button {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 8px 12px;
+            border: none;
+            background: none;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 14px;
+        }
+
+        .file-menu button:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .file-menu button:first-child {
+            border-radius: 8px 8px 0 0;
+        }
+
+        .file-menu button:last-child {
+            border-radius: 0 0 8px 8px;
+        }
+
+        .recent-files-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            box-shadow: 0 10px 25px var(--shadow-color);
+            border: 1px solid var(--border-color);
+            min-width: 350px;
+            max-height: 500px;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        .video-player-container {
+            position: relative;
+            width: 90vw;
+            height: 90vh;
+            max-width: 1200px;
+            max-height: 800px;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .main-video-player {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #000;
+        }
+
+        .video-controls-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 100%);
+            color: white;
+            z-index: 5;
+        }
+
+        .video-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: white;
+        }
+
+        .video-meta {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .video-error {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: white;
+            background: rgba(220, 38, 38, 0.9);
+            padding: 2rem;
+            border-radius: 12px;
+            z-index: 15;
+        }
+
+        .image-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            max-width: 95vw;
+            max-height: 95vh;
+            padding: 20px;
+        }
+
+        .image-container img {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .media-viewer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .media-viewer.hidden {
+            display: none !important;
+        }
+
+        .media-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            z-index: 10000;
+        }
+
+        .media-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        .search-result-item {
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .search-result-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .search-highlight {
+            background: #fef3c7;
+            color: #92400e;
+            padding: 1px 2px;
+            border-radius: 2px;
+        }
+
+        [data-theme="dark"] .search-highlight {
+            background: #451a03;
+            color: #fbbf24;
+        }
+
+        .view-btn.active {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .upload-status-indicator.active::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .bulk-action-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 1000;
+            box-shadow: 0 2px 8px var(--shadow-color);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @media (max-width: 768px) {
+            .video-player-container {
+                width: 95vw;
+                height: 70vh;
+            }
+            
+            .video-title {
+                font-size: 1.1rem;
+            }
+            
+            .image-container {
+                max-width: 100vw;
+                max-height: 100vh;
+                padding: 10px;
+            }
+            
+            .bulk-action-bar {
+                flex-direction: column;
+                gap: 8px;
+                padding: 8px;
+            }
+            
+            .bulk-action-bar .flex {
+                flex-wrap: wrap;
+                gap: 4px;
+            }
+        }
+    </style>
+</head>
+<body class="theme-bg-primary h-screen overflow-hidden">
+    <!-- Bulk Action Bar -->
+    <div id="bulkActionBar" class="bulk-action-bar hidden">
+        <div class="flex items-center flex-1">
+            <span class="font-medium theme-text-primary mr-4">
+                <span id="selectedCount">0</span> selected
+            </span>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button id="bulkSelectAllBtn" class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm">
+                Select All
+            </button>
+            <button id="bulkCopyBtn" class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm">
+                Copy
+            </button>
+            <button id="bulkMoveBtn" class="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-sm">
+                Move
+            </button>
+            <button id="bulkDeleteBtn" class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm">
+                Delete
+            </button>
+            <button id="bulkCancelBtn" class="px-3 py-1 bg-gray-400 text-white rounded hover:bg-gray-500 text-sm">
+                Cancel
+            </button>
+        </div>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-container">
+        <div class="login-card">
+            <div class="mb-10">
+                <div class="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full mb-6 shadow-lg">
+                    <i class="fas fa-cloud text-3xl text-white"></i>
+                </div>
+                <h1 class="text-4xl font-bold theme-text-primary mb-4">Welcome to TGDrive</h1>
+                <p class="theme-text-secondary text-lg leading-relaxed">
+                    Experience unlimited cloud storage powered by Telegram's infrastructure
+                </p>
+            </div>
+            
+            <div>
+                <button id="loginButton" onclick="loginWithTelegram()" class="custom-telegram-btn">
+                    <i class="fab fa-telegram-plane text-xl"></i>
+                    <span>Login with Telegram</span>
+                </button>
+                
+                <div class="mt-8">
+                    <p class="text-sm theme-text-tertiary leading-relaxed">
+                        🔒 Secure authentication via Telegram<br>
+                        📱 Your phone number stays private<br>
+                        ☁️ Unlimited storage space
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="app" class="h-full flex" style="display: none;">
+        <!-- Mobile Header -->
+        <div class="mobile-header theme-bg-secondary theme-border border-b p-4 flex items-center justify-between">
+            <button id="mobileMenuBtn" class="theme-text-secondary hover:theme-text-primary">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
+            <h1 class="text-lg font-bold theme-text-primary">TGDrive</h1>
+            <button id="mobileUploadBtn" class="text-blue-500 hover:text-blue-700">
+                <i class="fas fa-plus text-xl"></i>
+            </button>
+        </div>
+
+        <!-- Sidebar -->
+        <div id="sidebar" class="sidebar theme-bg-secondary desktop-sidebar flex-col theme-border border-r">
+            <!-- Header -->
+            <div class="p-6 theme-border border-b">
+                <div class="flex items-center justify-between">
+                    <h1 class="text-xl font-bold theme-text-primary flex items-center">
+                        <i class="fas fa-cloud mr-2 text-blue-500"></i>
+                        TGDrive
+                    </h1>
+                    <button id="closeSidebarBtn" class="md:hidden theme-text-secondary hover:theme-text-primary">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div id="userInfo" class="mt-3 text-sm theme-text-secondary">
+                    <!-- User info will be populated here -->
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="p-6 space-y-3">
+                <button id="newFolderBtn" class="w-full bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center text-sm font-medium">
+                    <i class="fas fa-folder-plus mr-2"></i>
+                    New Folder
+                </button>
+                <button id="uploadBtn" class="w-full bg-green-500 text-white py-3 px-4 rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center text-sm font-medium">
+                    <i class="fas fa-upload mr-2"></i>
+                    Upload Files
+                </button>
+                <button id="starredBtn" class="w-full bg-yellow-400 text-white py-3 px-4 rounded-lg hover:bg-yellow-500 transition-colors flex items-center justify-center text-sm font-medium">
+                    <i class="fas fa-star mr-2"></i>
+                    Starred
+                </button>
+                <button id="binBtn" class="w-full bg-red-500 text-white py-3 px-4 rounded-lg hover:bg-red-600 transition-colors flex items-center justify-center text-sm font-medium">
+                    <i class="fas fa-trash-alt mr-2"></i>
+                    Bin
+                </button>
+                <input type="file" id="fileInput" multiple class="hidden">
+            </div>
+            
+            <!-- Storage Info -->
+            <div class="p-6 theme-border border-t mt-auto">
+                <div class="storage-info text-sm theme-text-secondary">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="font-medium theme-text-primary">Storage Used</span>
+                        <span id="storageUsed" class="font-bold text-blue-600">Loading...</span>
+                    </div>
+                    <div class="storage-bar-container mb-3">
+                        <div id="storageBar" class="storage-bar" style="width: 0%"></div>
+                    </div>
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-green-600 font-medium">∞ Unlimited</span>
+                        <span id="fileCount" class="text-xs theme-text-tertiary">0 files</span>
+                    </div>
+                </div>
+                <button id="logoutBtn" class="w-full bg-red-50 text-red-600 hover:bg-red-100 py-2 px-4 rounded-lg transition-colors text-sm font-medium">
+                    <i class="fas fa-sign-out-alt mr-2"></i>
+                    Logout
+                </button>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content flex flex-col">
+            <!-- Top Bar -->
+            <div class="theme-bg-secondary theme-border border-b p-4 flex items-center justify-between">
+                <div class="flex items-center space-x-4 flex-1">
+                    <h2 class="text-lg font-semibold theme-text-primary">My Files</h2>
+                    
+                    <!-- Search Bar -->
+                    <div class="relative flex-1 max-w-md">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-search theme-text-tertiary text-sm"></i>
+                        </div>
+                        <input 
+                            type="text" 
+                            id="searchInput" 
+                            placeholder="Search files..." 
+                            class="theme-bg-tertiary theme-border theme-text-primary border rounded-lg pl-10 pr-4 py-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                            autocomplete="off"
+                        >
+                        <!-- Search Results Dropdown -->
+                        <div id="searchResults" class="absolute top-full left-0 right-0 mt-1 theme-bg-secondary theme-border border rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto hidden">
+                            <div id="searchResultsContent" class="p-2">
+                                <!-- Search results will appear here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-2">
+                    <button id="gridViewBtn" class="view-btn bg-gray-200 hover:bg-gray-300 p-2 rounded-lg transition-colors active" title="Grid View">
+                        <i class="fas fa-th"></i>
+                    </button>
+                    <button id="listViewBtn" class="view-btn bg-gray-200 hover:bg-gray-300 p-2 rounded-lg transition-colors" title="List View">
+                        <i class="fas fa-list"></i>
+                    </button>
+                    <button id="themeToggleBtn" class="bg-gray-200 hover:bg-gray-300 p-2 rounded-lg transition-colors" title="Toggle Theme">
+                        <i class="fas fa-sun" id="themeIcon"></i>
+                    </button>
+                    <!-- Upload Status Indicator -->
+                    <div class="relative">
+                        <button id="uploadStatusBtn" class="upload-status-indicator bg-gray-200 hover:bg-gray-300 p-2 rounded-lg transition-colors" title="Upload Status & Recent Files">
+                            <i class="fas fa-clock"></i>
+                        </button>
+                        <div id="recentFilesDropdown" class="recent-files-dropdown hidden">
+                            <div class="p-4 theme-border border-b">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h3 class="font-semibold theme-text-primary">Upload Status</h3>
+                                    <button id="cancelAllUploadsBtn" class="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 transition-colors">
+                                        <i class="fas fa-times mr-1"></i>Cancel All
+                                    </button>
+                                </div>
+                                <div id="activeUploadsContainer">
+                                    <p class="text-sm theme-text-secondary">No active uploads</p>
+                                </div>
+                            </div>
+                            <div class="p-4">
+                                <h3 class="font-semibold theme-text-primary mb-2">Recent Files (30min)</h3>
+                                <div id="recentFilesContainer">
+                                    <p class="text-sm theme-text-secondary">No recent files</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Breadcrumb -->
+            <div class="theme-bg-tertiary px-4 py-3 theme-border border-b">
+                <nav id="breadcrumb" class="flex items-center space-x-2 text-sm">
+                    <!-- Breadcrumb will be populated here -->
+                </nav>
+            </div>
+            
+            <!-- File Content Area -->
+            <div class="flex-1 overflow-y-auto p-4 md:p-6" id="mainDropZone">
+                <div id="fileContainer" class="file-grid">
+                    <!-- Files and folders will be populated here -->
+                </div>
+                
+                <!-- Empty State -->
+                <div id="emptyState" class="hidden text-center py-16">
+                    <i class="fas fa-folder-open text-6xl theme-text-tertiary mb-4"></i>
+                    <h3 class="text-xl font-medium theme-text-secondary mb-2">This folder is empty</h3>
+                    <p class="theme-text-tertiary">Upload files or create folders to get started</p>
+                    <p class="theme-text-tertiary text-sm mt-2">You can also drag and drop files here</p>
+                </div>
+                
+                <!-- Loading State -->
+                <div id="loadingState" class="hidden text-center py-16">
+                    <i class="fas fa-spinner fa-spin text-4xl text-blue-500 mb-4"></i>
+                    <p class="theme-text-secondary">Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Upload Progress Modal -->
+    <div id="uploadModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="theme-bg-secondary rounded-xl p-6 w-full max-w-lg theme-border border">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold theme-text-primary">Uploading Files</h3>
+                <div class="flex items-center space-x-2">
+                    <button id="backgroundUploadBtn" class="text-sm bg-blue-500 text-white px-3 py-1 rounded-lg hover:bg-blue-600 transition-colors">
+                        <i class="fas fa-minimize mr-1"></i>
+                        Upload in Background
+                    </button>
+                    <button id="cancelUploadBtn" class="theme-text-tertiary hover:theme-text-primary">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="uploadProgress" class="space-y-4 max-h-96 overflow-y-auto">
+                <!-- Upload progress items will be added here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- New Folder Modal -->
+    <div id="newFolderModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="theme-bg-secondary rounded-xl p-6 w-full max-w-md theme-border border">
+            <h3 class="text-lg font-semibold mb-4 theme-text-primary">Create New Folder</h3>
+            <input type="text" id="folderNameInput" placeholder="Enter folder name" class="w-full theme-border border theme-bg-tertiary theme-text-primary rounded-lg px-4 py-3 mb-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <div class="flex justify-end space-x-3">
+                <button id="cancelFolderBtn" class="px-4 py-2 theme-text-secondary hover:theme-bg-tertiary rounded-lg transition-colors">Cancel</button>
+                <button id="createFolderBtn" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Media Viewer Modal -->
+    <div id="mediaViewer" class="media-viewer hidden">
+        <button id="mediaClose" class="media-close">
+            <i class="fas fa-times"></i>
+        </button>
+        
+        <div id="mediaLoadingSpinner" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white text-2xl hidden">
+            <i class="fas fa-spinner fa-spin"></i>
+        </div>
+        
+        <!-- Video Player Container -->
+        <div id="videoPlayerContainer" class="video-player-container hidden">
+            <div class="relative w-full h-full">
+                <!-- Video Element -->
+                <video 
+                    id="mainVideoPlayer" 
+                    class="main-video-player"
+                    controls
+                    preload="metadata"
+                    playsinline
+                    webkit-playsinline
+                >
+                    <p>Your browser doesn't support HTML5 video.</p>
+                </video>
+                
+                <!-- Custom Controls Overlay -->
+                <div id="videoControlsOverlay" class="video-controls-overlay">
+                    <div class="video-info">
+                        <h3 id="videoTitle" class="video-title"></h3>
+                        <div id="videoMeta" class="video-meta"></div>
+                    </div>
+                    
+                    <!-- Error Message -->
+                    <div id="videoError" class="video-error hidden">
+                        <i class="fas fa-exclamation-triangle mb-2"></i>
+                        <p>Error loading video. Please try again.</p>
+                        <button id="retryVideoBtn" class="mt-2 bg-white text-red-600 px-4 py-2 rounded hover:bg-gray-100 transition-colors">Retry</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Image Container with proper sizing -->
+        <div id="imageContainer" class="image-container hidden">
+            <img id="mainImage" class="media-content" alt="">
+        </div>
+    </div>
+
+    <!-- Mobile Overlay -->
+    <div id="mobileOverlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"></div>
+
+    <script>
+        // Global variables
+        let isLoginInProgress = false;
+
+        // Theme management
+        function initTheme() {
+            const savedTheme = localStorage.getItem('tgdrive-theme') || 'light';
+            setTheme(savedTheme);
+        }
+
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('tgdrive-theme', theme);
+            
+            const themeIcon = document.getElementById('themeIcon');
+            if (themeIcon) {
+                themeIcon.className = theme === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
+            }
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            setTheme(newTheme);
+        }
+
+        // Initialize theme on page load
+        initTheme();
+
+        // REAL TELEGRAM LOGIN IMPLEMENTATION
+        function loginWithTelegram() {
+            if (isLoginInProgress) return;
+            
+            isLoginInProgress = true;
+            const loginButton = document.getElementById('loginButton');
+            if (loginButton) {
+                loginButton.disabled = true;
+                loginButton.innerHTML = '<i class="fas fa-spinner fa-spin text-xl"></i><span>Connecting...</span>';
+            }
+            
+            function attemptLogin() {
+                if (window.Telegram && window.Telegram.Login) {
+                    try {
+                        window.Telegram.Login.auth({
+                            bot_id: '8163786005', // Your actual bot ID
+                            request_access: true
+                        }, function(authData) {
+                            if (authData) {
+                                onTelegramAuth(authData);
+                            } else {
+                                resetLoginButton();
+                                alert('Telegram authentication was cancelled or failed');
+                            }
+                        });
+                    } catch (error) {
+                        console.error('Telegram auth error:', error);
+                        resetLoginButton();
+                        alert('Failed to initialize Telegram authentication');
+                    }
+                } else {
+                    // Load Telegram widget script
+                    const script = document.createElement('script');
+                    script.src = 'https://telegram.org/js/telegram-widget.js?22';
+                    script.onload = function() {
+                        setTimeout(() => {
+                            if (window.Telegram && window.Telegram.Login) {
+                                try {
+                                    window.Telegram.Login.auth({
+                                        bot_id: '8163786005', // Your actual bot ID
+                                        request_access: true
+                                    }, function(authData) {
+                                        if (authData) {
+                                            onTelegramAuth(authData);
+                                        } else {
+                                            resetLoginButton();
+                                            alert('Telegram authentication was cancelled or failed');
+                                        }
+                                    });
+                                } catch (error) {
+                                    console.error('Telegram auth error:', error);
+                                    resetLoginButton();
+                                    alert('Failed to authenticate with Telegram');
+                                }
+                            } else {
+                                console.error('Telegram.Login not available');
+                                resetLoginButton();
+                                alert('Telegram widget failed to load');
+                            }
+                        }, 1000);
+                    };
+                    script.onerror = function() {
+                        console.error('Failed to load Telegram script');
+                        resetLoginButton();
+                        alert('Failed to load Telegram authentication widget');
+                    };
+                    document.head.appendChild(script);
+                }
+            }
+            
+            if (window.Telegram && window.Telegram.Login) {
+                attemptLogin();
+            } else {
+                setTimeout(attemptLogin, 500);
+            }
+        }
+
+        function resetLoginButton() {
+            isLoginInProgress = false;
+            const loginButton = document.getElementById('loginButton');
+            if (loginButton) {
+                loginButton.disabled = false;
+                loginButton.innerHTML = '<i class="fab fa-telegram-plane text-xl"></i><span>Login with Telegram</span>';
+            }
+        }
+
+        function onTelegramAuth(user) {
+            console.log('Telegram auth received:', user);
+            
+            const authData = {
+                id: user.id,
+                first_name: user.first_name || '',
+                last_name: user.last_name || '',
+                username: user.username || '',
+                photo_url: user.photo_url || '',
+                auth_date: user.auth_date,
+                hash: user.hash
+            };
+            
+            fetch('http://127.0.0.1:8000/api/auth/telegram', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(authData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        throw new Error(`HTTP ${response.status}: ${text}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.token) {
+                    localStorage.setItem('tgdrive_token', data.token);
+                    
+                    setTimeout(() => {
+                        document.getElementById('loginScreen').style.display = 'none';
+                        document.getElementById('app').style.display = 'flex';
+                        
+                        if (window.app) {
+                            app.authToken = data.token;
+                            app.currentUser = data.user;
+                            app.showMainApp();
+                            app.loadContent();
+                            app.updateStorageInfo();
+                        } else {
+                            window.pendingLogin = {
+                                token: data.token,
+                                user: data.user
+                            };
+                        }
+                    }, 1000);
+                } else {
+                    throw new Error('No token received from server');
+                }
+            })
+            .catch(error => {
+                console.error('Login error:', error);
+                isLoginInProgress = false;
+                resetLoginButton();
+                alert('Login failed: ' + error.message);
+            });
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Page loaded, checking for existing token...');
+            
+            // Ensure media viewer is hidden on load
+            const mediaViewer = document.getElementById('mediaViewer');
+            if (mediaViewer) {
+                mediaViewer.classList.add('hidden');
+            }
+
+            // Bind theme toggle button
+            const themeToggleBtn = document.getElementById('themeToggleBtn');
+            if (themeToggleBtn) {
+                themeToggleBtn.addEventListener('click', toggleTheme);
+            }
+            
+            const existingToken = localStorage.getItem('tgdrive_token');
+            console.log('Existing token:', existingToken ? 'Found' : 'Not found');
+            
+            if (existingToken) {
+                console.log('Token exists, will be handled by app.js');
+            } else {
+                console.log('No token found, showing login screen');
+            }
+        });
+    </script>
+
+    <script src="app.js"></script>
+</body>
+</html>
