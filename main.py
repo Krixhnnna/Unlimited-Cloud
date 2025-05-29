@@ -1166,8 +1166,16 @@ async def debug_files(current_user: dict = Depends(get_current_user)):
 async def root():
     return {"message": "TGDrive API is running successfully"}
 
+
+    
+# For Vercel deployment
+from fastapi import FastAPI
+from mangum import Mangum
+
+# Create the handler for Vercel
+handler = Mangum(app)
+
+# For local development
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-
-    
