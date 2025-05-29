@@ -1,5 +1,5 @@
-# main.py - Complete implementation with storage endpoints
-from fastapi import FastAPI, HTTPException, UploadFile, File, Depends, Request, Header
+# main.py - Complete implementation with all fixes
+from fastapi import FastAPI, HTTPException, UploadFile, File, Depends, Request, Header, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from datetime import datetime, timedelta
@@ -9,6 +9,7 @@ import hashlib
 import hmac
 import urllib.parse
 import math
+import asyncio
 from typing import List, Optional
 import io
 from dotenv import load_dotenv
@@ -44,11 +45,13 @@ client = TelegramClient(StringSession(SESSION_STRING), API_ID, API_HASH)
 DB_FILE = "tgdrive_db.json"
 GROUPS_FILE = "tg_groups.json"
 
+# Store active uploads for cancellation
+active_uploads = {}
+
 def load_db():
     if os.path.exists(DB_FILE):
         with open(DB_FILE, 'r') as f:
             data = json.load(f)
-            # Ensure all required keys exist
             if 'users' not in data:
                 data['users'] = []
             if 'files' not in data:
@@ -75,18 +78,14 @@ def save_groups(data):
         json.dump(data, f, indent=2)
 
 def format_file_size(bytes_size):
-    """Format file size for display"""
     if bytes_size == 0:
         return "0 Bytes"
-    
     k = 1024
     sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
     i = int(math.floor(math.log(bytes_size) / math.log(k)))
-    
     return f"{round(bytes_size / math.pow(k, i), 2)} {sizes[i]}"
 
 async def refresh_entity_cache():
-    """Refresh entity cache by getting dialogs"""
     try:
         print("Refreshing entity cache...")
         await client.get_dialogs()
@@ -95,12 +94,10 @@ async def refresh_entity_cache():
         print(f"Error refreshing entity cache: {e}")
 
 async def ensure_default_group():
-    """Ensure default 'TG Drive' group exists"""
     groups_data = load_groups()
     
     if not groups_data.get("default_group_id"):
         try:
-            # Create default group
             result = await client(CreateChannelRequest(
                 title="TG Drive",
                 about="Default storage for TG Drive files",
@@ -111,25 +108,20 @@ async def ensure_default_group():
             groups_data["default_group_id"] = group_id
             save_groups(groups_data)
             print(f"Created default group 'TG Drive' with ID: {group_id}")
-            
-            # IMPORTANT: Refresh dialogs to cache the new entity
             await client.get_dialogs()
             
         except Exception as e:
             print(f"Error creating default group: {e}")
     else:
-        # Group exists, but make sure entity is cached
         try:
             await client.get_entity(int(groups_data["default_group_id"]))
         except ValueError:
-            # Entity not in cache, refresh dialogs
             print("Default group entity not in cache, refreshing...")
             await client.get_dialogs()
     
     return groups_data.get("default_group_id")
 
 async def create_folder_group(folder_name):
-    """Create a new Telegram group for a folder"""
     try:
         result = await client(CreateChannelRequest(
             title=f"TGDrive - {folder_name}",
@@ -139,10 +131,7 @@ async def create_folder_group(folder_name):
         
         group_id = result.chats[0].id
         print(f"Created folder group '{folder_name}' with ID: {group_id}")
-        
-        # IMPORTANT: Refresh dialogs to cache the new entity
         await client.get_dialogs()
-        
         return group_id
         
     except Exception as e:
@@ -150,7 +139,6 @@ async def create_folder_group(folder_name):
         return None
 
 async def delete_telegram_file(group_id, message_id):
-    """Delete a file from Telegram group"""
     try:
         await client(DeleteMessagesRequest(
             peer=int(group_id),
@@ -163,12 +151,8 @@ async def delete_telegram_file(group_id, message_id):
         return False
 
 async def delete_telegram_channel(channel_id):
-    """Delete a Telegram channel/group"""
     try:
-        # Get channel entity first
         channel = await client.get_entity(int(channel_id))
-        
-        # Delete the channel
         await client(DeleteChannelRequest(channel=channel))
         print(f"Deleted Telegram channel {channel_id}")
         return True
@@ -177,9 +161,7 @@ async def delete_telegram_channel(channel_id):
         return False
 
 def verify_telegram_auth(auth_data):
-    """Verify Telegram login data - TEMPORARY BYPASS"""
     try:
-        # Temporary: Just check if we have basic required fields
         if auth_data.get('id') and auth_data.get('first_name'):
             print(f"Auth bypass for user: {auth_data.get('first_name')} (ID: {auth_data.get('id')})")
             return True
@@ -189,7 +171,6 @@ def verify_telegram_auth(auth_data):
         return False
 
 def create_jwt_token(user_data):
-    """Create JWT token for user"""
     payload = {
         'user_id': user_data['id'],
         'username': user_data.get('username', ''),
@@ -199,7 +180,6 @@ def create_jwt_token(user_data):
     return jwt.encode(payload, JWT_SECRET, algorithm='HS256')
 
 def verify_jwt_token(token):
-    """Verify JWT token"""
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
         return payload
@@ -209,7 +189,6 @@ def verify_jwt_token(token):
         return None
 
 async def get_current_user(authorization: str = Header(None)):
-    """Get current authenticated user"""
     if not authorization or not authorization.startswith('Bearer '):
         raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
     
@@ -232,7 +211,6 @@ async def startup_event():
 # Authentication endpoints
 @app.post("/api/auth/telegram")
 async def telegram_login(request: Request):
-    """Authenticate user with Telegram login data"""
     try:
         data = await request.json()
         print(f"Received auth data: {data}")
@@ -240,17 +218,14 @@ async def telegram_login(request: Request):
         if not verify_telegram_auth(data):
             raise HTTPException(status_code=401, detail="Invalid Telegram authentication")
         
-        # Load database safely
         db = load_db()
         
-        # Ensure users key exists
         if 'users' not in db:
             db['users'] = []
             save_db(db)
         
         user_id = data['id']
         
-        # Check if user exists
         existing_user = None
         for user in db['users']:
             if user['id'] == user_id:
@@ -269,7 +244,6 @@ async def telegram_login(request: Request):
             save_db(db)
             print(f"Created new user: {user_record}")
         
-        # Create JWT token
         token = create_jwt_token(data)
         
         return {
@@ -290,7 +264,6 @@ async def telegram_login(request: Request):
 
 @app.get("/api/auth/verify")
 async def verify_token(authorization: str = Header(None)):
-    """Verify current token"""
     if not authorization or not authorization.startswith('Bearer '):
         raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
     
@@ -301,11 +274,12 @@ async def verify_token(authorization: str = Header(None)):
     
     return {"valid": True, "user": payload}
 
-# File operations
+# File operations with proper folder handling
 @app.post("/api/upload")
 async def upload_file(
     file: UploadFile = File(...), 
-    folder_id: int = 0,
+    folder_id: int = Form(0),
+    upload_id: str = Form(None),
     current_user: dict = Depends(get_current_user)
 ):
     try:
@@ -315,14 +289,18 @@ async def upload_file(
         
         print(f"Uploading file: {file.filename}, size: {len(content)}, folder_id: {folder_id}")
         
-        # Determine target group
+        # Check if upload was cancelled
+        if upload_id and upload_id in active_uploads and active_uploads[upload_id].get('cancelled'):
+            print(f"Upload {upload_id} was cancelled, aborting")
+            del active_uploads[upload_id]
+            raise HTTPException(status_code=499, detail="Upload cancelled")
+        
+        # Determine target group based on folder_id
         if folder_id == 0:
-            # Use default group
             target_group_id = groups_data["default_group_id"]
             if not target_group_id:
                 target_group_id = await ensure_default_group()
         else:
-            # Find folder's group
             folder = None
             for f in db["folders"]:
                 if f["id"] == folder_id and not f.get("is_deleted", False):
@@ -342,22 +320,21 @@ async def upload_file(
         try:
             target_entity = await client.get_entity(int(target_group_id))
         except ValueError:
-            # If entity not found, try to get it through dialogs
             print("Entity not found in cache, refreshing dialogs...")
             await client.get_dialogs()
             target_entity = await client.get_entity(int(target_group_id))
         
-        # Upload to specific Telegram group using the resolved entity
+        # Upload to specific Telegram group
         message = await client.send_file(
             target_entity,
             io.BytesIO(content),
-            caption=f"📁 {file.filename}\n👤 Uploaded by: {current_user['first_name']}",
+            caption=f"📁 {file.filename}\n👤 Uploaded by: {current_user['first_name']}\n📅 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
             file_name=file.filename
         )
         
         print(f"File uploaded to Telegram, message ID: {message.id}")
         
-        # Save to database
+        # Save to database with correct folder_id
         file_record = {
             "id": db["next_id"],
             "name": file.filename,
@@ -365,7 +342,7 @@ async def upload_file(
             "telegram_group_id": target_group_id,
             "size": len(content),
             "mime_type": file.content_type or "application/octet-stream",
-            "folder_id": folder_id,
+            "folder_id": folder_id,  # This ensures file is saved to correct folder
             "uploaded_by": current_user['user_id'],
             "created_at": datetime.now().isoformat(),
             "is_deleted": False
@@ -374,6 +351,10 @@ async def upload_file(
         db["files"].append(file_record)
         db["next_id"] += 1
         save_db(db)
+        
+        # Clean up upload tracking
+        if upload_id and upload_id in active_uploads:
+            del active_uploads[upload_id]
         
         print(f"File record saved: {file_record}")
         
@@ -385,11 +366,94 @@ async def upload_file(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/api/upload/cancel/{upload_id}")
+async def cancel_upload(upload_id: str, current_user: dict = Depends(get_current_user)):
+    """Cancel an ongoing upload"""
+    active_uploads[upload_id] = {'cancelled': True}
+    print(f"Upload {upload_id} marked for cancellation")
+    return {"message": "Upload cancelled"}
+
+@app.post("/api/files/{file_id}/move")
+async def move_file(
+    file_id: int, 
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
+    """Move a file to a different folder"""
+    try:
+        data = await request.json()
+        target_folder_id = data.get('folder_id', 0)
+        
+        db = load_db()
+        
+        # Find the file
+        file_record = None
+        for f in db["files"]:
+            if f["id"] == file_id and not f.get("is_deleted", False):
+                file_record = f
+                break
+        
+        if not file_record:
+            raise HTTPException(status_code=404, detail="File not found")
+        
+        # Verify target folder exists (if not root)
+        if target_folder_id != 0:
+            folder_exists = False
+            for folder in db["folders"]:
+                if folder["id"] == target_folder_id and not folder.get("is_deleted", False):
+                    folder_exists = True
+                    break
+            
+            if not folder_exists:
+                raise HTTPException(status_code=404, detail="Target folder not found")
+        
+        # Update file's folder_id
+        old_folder_id = file_record["folder_id"]
+        file_record["folder_id"] = target_folder_id
+        file_record["moved_at"] = datetime.now().isoformat()
+        
+        # Save database
+        save_db(db)
+        
+        print(f"Moved file {file_id} from folder {old_folder_id} to folder {target_folder_id}")
+        
+        return {
+            "message": "File moved successfully",
+            "file_id": file_id,
+            "old_folder_id": old_folder_id,
+            "new_folder_id": target_folder_id
+        }
+        
+    except Exception as e:
+        print(f"Move file error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/files")
 async def get_files(folder_id: int = 0, current_user: dict = Depends(get_current_user)):
     db = load_db()
+    # Filter files by folder_id to show files only in current folder
     files = [f for f in db["files"] if f["folder_id"] == folder_id and not f.get("is_deleted", False)]
     return files
+
+@app.get("/api/files/recent")
+async def get_recent_files(current_user: dict = Depends(get_current_user)):
+    """Get files uploaded in the last 30 minutes"""
+    db = load_db()
+    cutoff_time = datetime.now() - timedelta(minutes=30)
+    
+    recent_files = []
+    for f in db["files"]:
+        if not f.get("is_deleted", False):
+            try:
+                file_time = datetime.fromisoformat(f["created_at"])
+                if file_time > cutoff_time:
+                    recent_files.append(f)
+            except:
+                pass
+    
+    # Sort by creation time, newest first
+    recent_files.sort(key=lambda x: x["created_at"], reverse=True)
+    return recent_files[:10]  # Return last 10 files
 
 @app.get("/api/download/{file_id}")
 async def download_file(file_id: int, current_user: dict = Depends(get_current_user)):
@@ -405,7 +469,6 @@ async def download_file(file_id: int, current_user: dict = Depends(get_current_u
         raise HTTPException(status_code=404, detail="File not found")
     
     try:
-        # Download from specific group
         group_id = file_record["telegram_group_id"]
         message = await client.get_messages(int(group_id), ids=int(file_record["telegram_file_id"]))
         file_bytes = await client.download_media(message.media, file=bytes)
@@ -479,14 +542,14 @@ async def delete_file(file_id: int, current_user: dict = Depends(get_current_use
         
         file_record = None
         for f in db["files"]:
-            if f["id"] == file_id:
+            if f["id"] == file_id and not f.get("is_deleted", False):
                 file_record = f
                 break
         
         if not file_record:
             raise HTTPException(status_code=404, detail="File not found")
         
-        # Delete from Telegram
+        # Delete from Telegram FIRST
         success = await delete_telegram_file(
             file_record["telegram_group_id"], 
             file_record["telegram_file_id"]
@@ -516,7 +579,7 @@ async def delete_folder(folder_id: int, current_user: dict = Depends(get_current
         
         folder_record = None
         for f in db["folders"]:
-            if f["id"] == folder_id:
+            if f["id"] == folder_id and not f.get("is_deleted", False):
                 folder_record = f
                 break
         
@@ -538,7 +601,6 @@ async def delete_folder(folder_id: int, current_user: dict = Depends(get_current
             success = await delete_telegram_channel(channel_id)
             if success:
                 print(f"Successfully deleted Telegram channel for folder")
-                # Remove from groups mapping
                 del groups_data["folder_groups"][str(folder_id)]
                 save_groups(groups_data)
             else:
@@ -558,14 +620,12 @@ async def delete_folder(folder_id: int, current_user: dict = Depends(get_current
 # Storage endpoints
 @app.get("/api/files/all")
 async def get_all_files(current_user: dict = Depends(get_current_user)):
-    """Get all files for storage calculation"""
     db = load_db()
     files = [f for f in db["files"] if not f.get("is_deleted", False)]
     return files
 
 @app.get("/api/storage/info")
 async def get_storage_info(current_user: dict = Depends(get_current_user)):
-    """Get storage information"""
     db = load_db()
     files = [f for f in db["files"] if not f.get("is_deleted", False)]
     

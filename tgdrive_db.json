@@ -1,0 +1,209 @@
+{
+  "files": [
+    {
+      "id": 1,
+      "name": "1.jpg",
+      "telegram_file_id": "2",
+      "telegram_group_id": 2551478312,
+      "size": 1384225,
+      "mime_type": "image/jpeg",
+      "folder_id": 0,
+      "uploaded_by": 1647999141,
+      "created_at": "2025-05-29T10:25:26.281338",
+      "is_deleted": true,
+      "deleted_at": "2025-05-29T10:26:36.396598"
+    },
+    {
+      "id": 3,
+      "name": "1.jpg",
+      "telegram_file_id": "3",
+      "telegram_group_id": 2551478312,
+      "size": 1384225,
+      "mime_type": "image/jpeg",
+      "folder_id": 0,
+      "uploaded_by": 1647999141,
+      "created_at": "2025-05-29T10:27:06.050969",
+      "is_deleted": true,
+      "deleted_at": "2025-05-29T13:16:56.505939"
+    },
+    {
+      "id": 4,
+      "name": "4.jpg",
+      "telegram_file_id": "4",
+      "telegram_group_id": 2551478312,
+      "size": 1412655,
+      "mime_type": "image/jpeg",
+      "folder_id": 0,
+      "uploaded_by": 1647999141,
+      "created_at": "2025-05-29T10:27:29.813152",
+      "is_deleted": false
+    },
+    {
+      "id": 5,
+      "name": "Untitled video - Made with Clipchamp (2).mp4",
+      "telegram_file_id": "5",
+      "telegram_group_id": 2551478312,
+      "size": 52579166,
+      "mime_type": "video/mp4",
+      "folder_id": 0,
+      "uploaded_by": 1647999141,
+      "created_at": "2025-05-29T10:30:35.560764",
+      "is_deleted": false
+    },
+    {
+      "id": 6,
+      "name": "5.jpg",
+      "telegram_file_id": "6",
+      "telegram_group_id": 2551478312,
+      "size": 1515788,
+      "mime_type": "image/jpeg",
+      "folder_id": 0,
+      "uploaded_by": 1647999141,
+      "created_at": "2025-05-29T10:44:11.815489",
+      "is_deleted": false
+    },
+    {
+      "id": 7,
+      "name": "64Gram_1.1.58_mac.dmg",
+      "telegram_file_id": "8",
+      "telegram_group_id": 2551478312,
+      "size": 138601081,
+      "mime_type": "application/x-apple-diskimage",
+      "folder_id": 0,
+      "uploaded_by": 1647999141,
+      "created_at": "2025-05-29T10:48:14.136076",
+      "is_deleted": false
+    },
+    {
+      "id": 8,
+      "name": "fdm.dmg",
+      "telegram_file_id": "10",
+      "telegram_group_id": 2551478312,
+      "size": 55437714,
+      "mime_type": "application/x-apple-diskimage",
+      "folder_id": 0,
+      "uploaded_by": 1647999141,
+      "created_at": "2025-05-29T11:06:32.383867",
+      "is_deleted": false
+    },
+    {
+      "id": 9,
+      "name": "7.jpg",
+      "telegram_file_id": "11",
+      "telegram_group_id": 2551478312,
+      "size": 1497878,
+      "mime_type": "image/jpeg",
+      "folder_id": 0,
+      "uploaded_by": 1647999141,
+      "created_at": "2025-05-29T11:16:24.414917",
+      "is_deleted": false
+    },
+    {
+      "id": 10,
+      "name": "4.jpg",
+      "telegram_file_id": "12",
+      "telegram_group_id": 2551478312,
+      "size": 1412655,
+      "mime_type": "image/jpeg",
+      "folder_id": 0,
+      "uploaded_by": 1647999141,
+      "created_at": "2025-05-29T11:16:50.942784",
+      "is_deleted": true,
+      "deleted_at": "2025-05-29T12:21:12.792654"
+    },
+    {
+      "id": 11,
+      "name": "Untitled video - Made with Clipchamp (4).mp4",
+      "telegram_file_id": "13",
+      "telegram_group_id": 2551478312,
+      "size": 1349780,
+      "mime_type": "video/mp4",
+      "folder_id": 0,
+      "uploaded_by": 1647999141,
+      "created_at": "2025-05-29T11:17:04.233610",
+      "is_deleted": false
+    },
+    {
+      "id": 12,
+      "name": "Untitled video - Made with Clipchamp (5).mp4",
+      "telegram_file_id": "16",
+      "telegram_group_id": 2551478312,
+      "size": 123205344,
+      "mime_type": "video/mp4",
+      "folder_id": 0,
+      "uploaded_by": 1647999141,
+      "created_at": "2025-05-29T11:20:10.006898",
+      "is_deleted": false
+    },
+    {
+      "id": 13,
+      "name": "7.jpg",
+      "telegram_file_id": "17",
+      "telegram_group_id": 2551478312,
+      "size": 1497878,
+      "mime_type": "image/jpeg",
+      "folder_id": 0,
+      "uploaded_by": 1647999141,
+      "created_at": "2025-05-29T11:55:28.795950",
+      "is_deleted": false
+    },
+    {
+      "id": 14,
+      "name": "64Gram_1.1.58_mac.dmg",
+      "telegram_file_id": "18",
+      "telegram_group_id": 2551478312,
+      "size": 138601081,
+      "mime_type": "application/x-apple-diskimage",
+      "folder_id": 0,
+      "uploaded_by": 1647999141,
+      "created_at": "2025-05-29T11:59:02.681426",
+      "is_deleted": false
+    },
+    {
+      "id": 15,
+      "name": "Untitled video - Made with Clipchamp (3).mp4",
+      "telegram_file_id": "20",
+      "telegram_group_id": 2551478312,
+      "size": 86838026,
+      "mime_type": "video/mp4",
+      "folder_id": 0,
+      "uploaded_by": 1647999141,
+      "created_at": "2025-05-29T12:19:15.860117",
+      "is_deleted": true,
+      "deleted_at": "2025-05-29T12:20:35.169911"
+    },
+    {
+      "id": 16,
+      "name": "5.jpg",
+      "telegram_file_id": "21",
+      "telegram_group_id": 2551478312,
+      "size": 1515788,
+      "mime_type": "image/jpeg",
+      "folder_id": 0,
+      "uploaded_by": 1647999141,
+      "created_at": "2025-05-29T13:36:08.839986",
+      "is_deleted": false
+    }
+  ],
+  "folders": [
+    {
+      "id": 2,
+      "name": "hello",
+      "parent_id": 0,
+      "telegram_group_id": 2453340104,
+      "created_by": 1647999141,
+      "created_at": "2025-05-29T10:26:52.135373",
+      "is_deleted": false
+    }
+  ],
+  "users": [
+    {
+      "id": 1647999141,
+      "username": "Madmax_real",
+      "first_name": "X",
+      "last_name": "",
+      "created_at": "2025-05-29T10:25:04.996442"
+    }
+  ],
+  "next_id": 17
+}
