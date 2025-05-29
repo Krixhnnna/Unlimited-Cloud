@@ -1,0 +1,27 @@
+{
+  "files": [
+    {
+      "id": 1,
+      "name": "2.jpg",
+      "telegram_file_id": "2",
+      "telegram_group_id": 2605421986,
+      "size": 1474276,
+      "mime_type": "image/jpeg",
+      "folder_id": 0,
+      "uploaded_by": 1647999141,
+      "created_at": "2025-05-29T09:48:53.479504",
+      "is_deleted": false
+    }
+  ],
+  "folders": [],
+  "users": [
+    {
+      "id": 1647999141,
+      "username": "Madmax_real",
+      "first_name": "X",
+      "last_name": "",
+      "created_at": "2025-05-29T09:47:40.436386"
+    }
+  ],
+  "next_id": 2
+}
