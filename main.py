@@ -29,7 +29,6 @@ import json
 load_dotenv()
 
 app = FastAPI(title="TGDrive API")
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -328,7 +327,7 @@ async def verify_token(authorization: str = Header(None)):
     
     return {"valid": True, "user": payload}
 
-  @app.post("/api/upload")
+@app.post("/api/upload")
 async def upload_file(
     file: UploadFile = File(...), 
     folder_id: int = Form(0),
@@ -1085,8 +1084,14 @@ async def get_storage_info(current_user: dict = Depends(get_current_user)):
     }
 @app.on_event("startup")
 async def startup_event():
-    await init_telegram()
-    migrate_database()  # Add this line
+    try:
+        await init_telegram()
+        migrate_database()
+        print("Application started successfully")
+    except Exception as e:
+        print(f"Startup warning: {e}")
+        # Don't crash the app if Telegram client fails
+        migrate_database()
 
 @app.get("/api/debug/files")
 async def debug_files(current_user: dict = Depends(get_current_user)):
@@ -1137,10 +1142,7 @@ def lambda_handler(event, context):
             "statusCode": 500,
             "body": f"Internal server error: {str(e)}"
         }
-
-# For local development only
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
-
-
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
