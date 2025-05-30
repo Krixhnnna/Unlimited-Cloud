@@ -581,20 +581,27 @@
                 </p>
             </div>
             
-            <div>
-                <button id="loginButton" onclick="loginWithTelegram()" class="custom-telegram-btn">
-                    <i class="fab fa-telegram-plane text-xl"></i>
-                    <span>Login with Telegram</span>
-                </button>
-                
-                <div class="mt-8">
-                    <p class="text-sm theme-text-tertiary leading-relaxed">
-                        🔒 Secure authentication via Telegram<br>
-                        📱 Your phone number stays private<br>
-                        ☁️ Unlimited storage space<br>
-                    </p>
-                </div>
-            </div>
+           <!-- Replace the existing login button with this -->
+<div class="text-center">
+    <button onclick="loginWithBot()" class="custom-telegram-btn">
+        <i class="fab fa-telegram-plane text-xl"></i>
+        <span>Login with Bot</span>
+    </button>
+    <p class="text-sm theme-text-tertiary mt-4">
+        Click above, then go to Telegram and start a chat with @your_bot_username
+    </p>
+</div>
+
+<script>
+function loginWithBot() {
+    // Open Telegram bot directly
+    window.open('https://t.me/@krizzdrivebot?start=login', '_blank');
+    
+    // Show instructions
+    alert('Please go to Telegram and start a chat with the bot, then return here and refresh the page.');
+}
+</script>
+
         </div>
     </div>
 
