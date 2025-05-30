@@ -966,66 +966,69 @@
             }
         }
 
-        function onTelegramAuth(user) {
-            console.log('Telegram auth received:', user);
-            
-            const authData = {
-                id: user.id,
-                first_name: user.first_name || '',
-                last_name: user.last_name || '',
-                username: user.username || '',
-                photo_url: user.photo_url || '',
-                auth_date: user.auth_date,
-                hash: user.hash
-            };
-            
-            fetch('https://unlimited-cloud.railway.app/api/auth/telegram', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(authData)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    return response.text().then(text => {
-                        throw new Error(`HTTP ${response.status}: ${text}`);
-                    });
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.token) {
-                    localStorage.setItem('tgdrive_token', data.token);
-                    
-                    setTimeout(() => {
-                        document.getElementById('loginScreen').style.display = 'none';
-                        document.getElementById('app').style.display = 'flex';
-                        
-                        if (window.app) {
-                            app.authToken = data.token;
-                            app.currentUser = data.user;
-                            app.showMainApp();
-                            app.loadContent();
-                            app.updateStorageInfo();
-                        } else {
-                            window.pendingLogin = {
-                                token: data.token,
-                                user: data.user
-                            };
-                        }
-                    }, 1000);
-                } else {
-                    throw new Error('No token received from server');
-                }
-            })
-            .catch(error => {
-                console.error('Login error:', error);
-                isLoginInProgress = false;
-                resetLoginButton();
-                alert('Login failed: ' + error.message);
+      function onTelegramAuth(user) {
+    console.log('Telegram auth received:', user);
+    
+    const authData = {
+        id: user.id,
+        first_name: user.first_name || '',
+        last_name: user.last_name || '',
+        username: user.username || '',
+        photo_url: user.photo_url || '',
+        auth_date: user.auth_date,
+        hash: user.hash
+    };
+    
+    // Use your Railway backend URL
+    fetch('https://unlimited-cloud-production.up.railway.app/api/auth/telegram', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(authData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.text().then(text => {
+                throw new Error(`HTTP ${response.status}: ${text}`);
             });
         }
+        return response.json();
+    })
+    .then(data => {
+        if (data.token) {
+            localStorage.setItem('tgdrive_token', data.token);
+            
+            setTimeout(() => {
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('app').style.display = 'flex';
+                
+                if (window.app) {
+                    app.authToken = data.token;
+                    app.currentUser = data.user;
+                    app.showMainApp();
+                    app.loadContent();
+                    app.updateStorageInfo();
+                } else {
+                    window.pendingLogin = {
+                        token: data.token,
+                        user: data.user
+                    };
+                }
+            }, 1000);
+        } else {
+            throw new Error('No token received from server');
+        }
+    })
+    .catch(error => {
+        console.error('Login error:', error);
+        isLoginInProgress = false;
+        resetLoginButton();
+        alert('Login failed: ' + error.message);
+    });
+}
+
+            
 
         // Initialize when page loads
         document.addEventListener('DOMContentLoaded', function() {

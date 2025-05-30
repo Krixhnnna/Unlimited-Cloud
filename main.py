@@ -1126,22 +1126,9 @@ async def root():
 
     
 # Add this at the very end of your main.py file
-from mangum import Mangum
-import asyncio
 
-# Create the handler for Vercel
-handler = Mangum(app, lifespan="off")
 
-# Ensure event loop is properly handled
-def lambda_handler(event, context):
-    try:
-        return handler(event, context)
-    except Exception as e:
-        print(f"Handler error: {e}")
-        return {
-            "statusCode": 500,
-            "body": f"Internal server error: {str(e)}"
-        }
+# Remove all mangum-related code and keep only this:
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
