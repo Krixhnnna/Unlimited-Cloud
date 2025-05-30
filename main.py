@@ -261,10 +261,27 @@ async def init_telegram():
         print("Telegram client started successfully")
     except Exception as e:
         print(f"Telegram client error: {e}")
-
+# Fix the startup event
 @app.on_event("startup")
 async def startup_event():
-    await init_telegram()
+    try:
+        # Initialize Telegram client properly
+        global client
+        if SESSION_STRING:
+            client = TelegramClient(StringSession(SESSION_STRING), API_ID, API_HASH)
+            await client.start()
+            await ensure_default_group()
+            print("Telegram client started successfully")
+        else:
+            print("No session string provided, skipping Telegram client")
+        
+        migrate_database()
+        print("Application started successfully")
+    except Exception as e:
+        print(f"Startup warning: {e}")
+        # Don't crash the app if Telegram client fails
+        migrate_database()
+        print("Application started without Telegram client")
 
 # Authentication endpoints
 @app.post("/api/auth/telegram")
