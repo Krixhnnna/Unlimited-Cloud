@@ -32,6 +32,7 @@ app = FastAPI(title="TGDrive API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        "https:https://unlimited-cloud.up.railway.app",
         "https://unlimited-cloud.vercel.app",
         "http://localhost:3000",
         "http://127.0.0.1:5500",  # For local development
