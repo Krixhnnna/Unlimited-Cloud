@@ -581,27 +581,27 @@
                 </p>
             </div>
             
-           <!-- Replace the existing login button with this -->
-<div class="text-center">
-    <button onclick="loginWithBot()" class="custom-telegram-btn">
-        <i class="fab fa-telegram-plane text-xl"></i>
-        <span>Login with Bot</span>
+            <div>
+                <button id="loginButton" onclick="loginWithTelegram()" class="custom-telegram-btn">
+                    <i class="fab fa-telegram-plane text-xl"></i>
+                    <span>Login with Telegram</span>
+                </button>
+                
+                <div class="mt-8">
+                    <p class="text-sm theme-text-tertiary leading-relaxed">
+                        🔒 Secure authentication via Telegram<br>
+                        📱 Your phone number stays private<br>
+                        ☁️ Unlimited storage space<br>
+                    </p>
+                </div>
+            </div>
+            <div class="text-center">
+    <div id="qr-code" class="mb-4"></div>
+    <button onclick="generateQRLogin()" class="custom-telegram-btn">
+        <i class="fas fa-qrcode text-xl"></i>
+        <span>Login with QR Code</span>
     </button>
-    <p class="text-sm theme-text-tertiary mt-4">
-        Click above, then go to Telegram and start a chat with @your_bot_username
-    </p>
 </div>
-
-<script>
-function loginWithBot() {
-    // Open Telegram bot directly
-    window.open('https://t.me/krizzdrivebot?start=login', '_blank');
-    
-    // Show instructions
-    alert('Please go to Telegram and start a chat with the bot, then return here and refresh the page.');
-}
-</script>
-
         </div>
     </div>
 
@@ -859,6 +859,8 @@ function loginWithBot() {
     <div id="mobileOverlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"></div>
 
     <script>
+
+        
         // Global variables
         let isLoginInProgress = false;
 
@@ -1061,7 +1063,24 @@ function loginWithBot() {
             } else {
                 console.log('No token found, showing login screen');
             }
+
+        
+function generateQRLogin() {
+    const loginToken = Date.now() + Math.random().toString(36);
+    const qrData = `tgdrive_login:${loginToken}`;
+    
+    // Generate QR code (you'll need a QR code library)
+    document.getElementById('qr-code').innerHTML = `
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}" alt="QR Code">
+        <p>Scan this with Telegram</p>
+    `;
+    
+    // Poll for login
+    pollForLogin(loginToken);
+}
+
         });
+
     </script>
 
     <script src="app.js"></script>
