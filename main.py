@@ -23,6 +23,8 @@ from telethon.tl.types import InputPeerChannel, InputChannel
 import jwt
 import shutil
 import tempfile
+import base64
+import json
 
 load_dotenv()
 
@@ -49,8 +51,8 @@ BOT_TOKEN = os.getenv("BOT_TOKEN", "8163786005:AAGXksXF-hMKLo3isJ2p57OL0GZvGsmCY
 SESSION_STRING = os.getenv("SESSION_STRING", "1BVtsOJEBu2fHrJxQKE5knVbrqUwc2IH1IPU85cacoDFd5MIq-v3WCQIzC4JsUA427msEDhNHrJ17z5Z3GEZ3VfuiETmcgmHDm8jdqGA3ZLIdZSN73XPaH_FNlQASlin4_FoOEVzZVzNdSpM40M79C2isYei3tYE_r7I_Kx_60M3hSPAOxH4jJY0jrMAjgtXST3-iA-hfB2TKov9njoUGI_WrM7TClvYo6J-sWyUFTzqqms4ZnzqZYmZvLECWhDKqaIWhvaOAsg90xMrPAlByGfqLQmUjyw9ulrDHfqh1uvsjlemiFlgjMe7qF9JPZYzStRDC4IrN_7jeP8WtKc_Qhw9X7Tba1mk=")
 JWT_SECRET = os.getenv("JWT_SECRET", "my_super_secret_jwt_key_12345")
 
-# Initialize Telegram client
-client = TelegramClient(StringSession(SESSION_STRING), API_ID, API_HASH)
+# # Initialize Telegram client
+# client = TelegramClient(StringSession(SESSION_STRING), API_ID, API_HASH)
 
 # Database files
 DB_FILE = "tgdrive_db.json"
@@ -254,7 +256,7 @@ async def get_current_user(authorization: str = Header(None)):
 
 async def init_telegram():
     try:
-        await client.start()
+        # await client.start()
         await client.get_dialogs()
         await ensure_default_group()
         print("Telegram client started successfully")
@@ -326,58 +328,20 @@ async def verify_token(authorization: str = Header(None)):
     
     return {"valid": True, "user": payload}
 
-# File operations
-@app.post("/api/upload")
+  @app.post("/api/upload")
 async def upload_file(
     file: UploadFile = File(...), 
     folder_id: int = Form(0),
-    upload_id: str = Form(None),
     current_user: dict = Depends(get_current_user)
 ):
     try:
         db = load_db()
         content = await file.read()
         
-        clean_filename = sanitize_filename(file.filename)
-        print(f"Uploading file: {clean_filename}, size: {len(content)}")
-        
-        # Check if upload was cancelled
-        if upload_id and upload_id in active_uploads and active_uploads[upload_id].get('cancelled'):
-            del active_uploads[upload_id]
-            raise HTTPException(status_code=499, detail="Upload cancelled")
-        
-        # Get target group
-        groups_data = load_groups()
-        target_group_id = groups_data.get("default_group_id")
-        
-        if not target_group_id:
-            target_group_id = await ensure_default_group()
-        
-        # Upload to Telegram
-        message_id = f"msg_{db['next_id']}_{int(datetime.now().timestamp())}"
-        
-        try:
-            target_entity = await client.get_entity(int(target_group_id))
-            message = await client.send_file(
-                target_entity,
-                io.BytesIO(content),
-                caption=f"📁 {clean_filename}\n👤 {current_user['first_name']}\n📅 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-                file_name=clean_filename
-            )
-            message_id = str(message.id)
-            print(f"File uploaded to Telegram, message ID: {message_id}")
-        except Exception as e:
-            print(f"Telegram upload error: {e}")
-            # Store file content directly for small files
-            if len(content) < 50 * 1024 * 1024:  # 50MB limit
-                message_id = f"local_{db['next_id']}"
-        
-        # Save to database
+        # Store file content directly (for demo purposes)
         file_record = {
             "id": db["next_id"],
-            "name": clean_filename,
-            "telegram_file_id": message_id,
-            "telegram_group_id": target_group_id,
+            "name": sanitize_filename(file.filename),
             "size": len(content),
             "mime_type": file.content_type or "application/octet-stream",
             "folder_id": folder_id,
@@ -385,34 +349,23 @@ async def upload_file(
             "created_at": datetime.now().isoformat(),
             "is_deleted": False,
             "starred": False,
-            "versions": []  # NEW: File versioning support
+            "content": base64.b64encode(content).decode('utf-8')  # Store as base64
         }
-        
-        # Store small files directly
-        if len(content) < 10 * 1024 * 1024:  # 10MB
-            file_record["content"] = content.hex()
         
         db["files"].append(file_record)
         db["next_id"] += 1
         save_db(db)
         
-        # Clean up upload tracking
-        if upload_id and upload_id in active_uploads:
-            del active_uploads[upload_id]
-        
-        print(f"File record saved: {file_record['name']}")
-        
         # Remove content from response
         response_record = file_record.copy()
-        if 'content' in response_record:
-            del response_record['content']
+        del response_record['content']
         
-        return safe_json_encode(response_record)
+        return response_record
         
     except Exception as e:
         print(f"Upload error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-
+     
 @app.post("/api/upload/cancel/{upload_id}")
 async def cancel_upload(upload_id: str, current_user: dict = Depends(get_current_user)):
     active_uploads[upload_id] = {'cancelled': True}
@@ -1167,18 +1120,27 @@ async def root():
     return {"message": "TGDrive API is running successfully"}
 
     
-# For Vercel serverless deployment
+# Add this at the very end of your main.py file
 from mangum import Mangum
+import asyncio
 
-# Create the ASGI handler for Vercel
-handler = Mangum(app)
+# Create the handler for Vercel
+handler = Mangum(app, lifespan="off")
 
-# Export the handler for Vercel
-def handler_func(event, context):
-    return handler(event, context)
+# Ensure event loop is properly handled
+def lambda_handler(event, context):
+    try:
+        return handler(event, context)
+    except Exception as e:
+        print(f"Handler error: {e}")
+        return {
+            "statusCode": 500,
+            "body": f"Internal server error: {str(e)}"
+        }
 
-# For local development
+# For local development only
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
 
